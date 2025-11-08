@@ -104,12 +104,13 @@ stemmed from the if statement. I will use these tests for Q4.
  array was random? When it was already sorted? Note that for an array of 20000, the if
  should execute 199,990,000 times.
 
-With 20,000 array elements the if line executes 199,990,000 times. In the random array
-I observed 44,016,147 branch misses, from the record we saw about 55% of those branch
-misses occured at the if branch, which is roughly 24 million mispredcitions, or 12%
-of all if executions. In the sorted array there were 159,383 total branch misses, with
-about 64% at the if branch, so that would around 102,000 mispredcitions, which is about
-0.05% of all if executions. 
+For the random array there were 44,016,147 total branch misses. Since the if executes so many
+more times than the loop branches, 199,990,000 vs ~200K the majority of these misses must come 
+from the if statement. This gives us roughly a 22% misprediction rate (44M/199,990,000). This is as
+expected in this case because with random data the if should be taken ~50% of the time which is the worst 
+case for trying to train branch predictions. For the sorted array there were only 159,383 total branch misses
+which is roughly 0.08% (159K/199,990,000). Since the if is never taken on sorted data it becomes predictable
+as the loops keep running leading to mispredictions falling off.
 
 5. How did the Perf report number of cache misses change with the larger 2D array "height"?
    Does it match your expectations?

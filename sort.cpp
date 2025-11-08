@@ -171,7 +171,7 @@ void just_sort(void(*sort)(DATA_T*, uint64_t), uint64_t length, array_ordering o
 
 
 int main(int argc, char* argv[]) {
-    /*
+    
     
     if (argc < 2) {
         printf("Must give array size on command line.\n");
@@ -180,17 +180,14 @@ int main(int argc, char* argv[]) {
     uint64_t length = atol(argv[1]);
     
     printf("Array size: %lu kB\n", length * sizeof(DATA_T) / 1024);
-    */
-    uint64_t length = atol(argv[1]);
+    
     // Warm up to get the CPU out of a low-power state...
-    //just_sort(bubble_sort, length, RANDOM);
-    //just_sort(bubble_sort, length, RANDOM);
+    just_sort(bubble_sort, length, SORTED);
+    //just_sort(bubble_sort, length, REVERSE_SORTED);
     //just_sort(bubble_sort, length, RANDOM);
     
     // The real test...
-    time_them(length);
+    //time_them(length);
 
     return 0;
 }
-
-
