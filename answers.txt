@@ -1,0 +1,169 @@
+1. Do you promise you got a "All heap blocks were freed" on your array-2d.c code from last week?
+
+I promise that I got that message last week for the lab. I ran valgrind last week so I already know it 
+was done properly.
+
+2.When bubble sorting a random array, what fraction of the running time do you think is being spent on
+  examining values (the loops + comparison)? Swapping values? Branch mispredictions?
+
+Loops and comparisons (~50%): Due to the fact that bubble sort uses a double for loop to iterate over the elements 
+of the array a lot of the time will be spent doing comparisons, incrementing counters and also bound checking. These 
+loops run O(n^2) times. 
+
+Swapping values (~30%): On a random array we know that we will not be swaping all values and on average half the pairs 
+will be swapped. so this should be about O(n^2/2) time. 
+
+Branch mispredictions(~20%): The if statement i think will take a up a reasonable amount of the run time for this 
+program. The if is going to be taken ~50% of the time which is terrible for predicting branches. 
+
+3. What were the tests of bubble sort you ran under perf? (Likely 2 or 3 runs with different calls to just_sort.)
+
+RANDOM:
+ccj6@asb9838nu-d16 ~> perf stat -e branch-misses,branches,br_inst_retired.not_taken ./a.out 20000
+
+Array size: 156 kB
+
+ Performance counter stats for './a.out 20000':
+
+        44,016,147      branch-misses                    #    8.77% of all branches           
+       501,822,825      branches                                                              
+       301,049,367      br_inst_retired.not_taken                                             
+
+       0.467924051 seconds time elapsed
+
+       0.458965000 seconds user
+       0.001999000 seconds sys
+
+REVERSE_SORT:
+ccj6@asb9838nu-d16 ~> perf stat -e branch-misses,branches,br_inst_retired.not_taken ./a.out 20000
+
+Array size: 156 kB
+
+ Performance counter stats for './a.out 20000':
+
+           171,094      branch-misses                    #    0.03% of all branches           
+       601,324,682      branches                                                              
+       400,531,118      br_inst_retired.not_taken                                             
+
+       0.146775414 seconds time elapsed
+
+       0.142169000 seconds user
+       0.000000000 seconds sys
+
+SORTED:
+ccj6@asb9838nu-d16 ~> perf stat -e branch-misses,branches,br_inst_retired.not_taken ./a.out 20000
+
+Array size: 156 kB
+
+ Performance counter stats for './a.out 20000':
+
+           159,383      branch-misses                    #    0.04% of all branches           
+       401,304,211      branches                                                              
+       200,532,760      br_inst_retired.not_taken                                             
+
+       0.098411279 seconds time elapsed
+
+       0.096594000 seconds user
+       0.000000000 seconds sys
+
+RANDOM record:
+      │    ↓ jmp     49                                                                                        ▒
+       │    for (uint64_t j = i + 1; j < length; j++) {                                                         ▒
+  0.04 │1d:   add     $0x8,%rax                                                                                 ▒
+       │      cmp     %rcx,%rax                                                                                 ▒
+       │    ↓ je      40                                                                                        ▒
+       │    if (array[i] > array[j]) {                                                                          ▒
+       │26:   vmovsd  -0x8(%rdx),%xmm1                                                                          ▒
+ 54.99 │      vmovsd  (%rax),%xmm0                                                                              ▒
+       │      vcomisd %xmm0,%xmm1                                                                               ◆
+  0.07 │    ↑ jbe     1d                                                                                        ▒
+       │    DATA_T tmp = array[j];                                                                              ▒
+       │    array[j] = array[i];          
+
+SORT record:
+       │    for (uint64_t j = i + 1; j < length; j++) {                                                         ▒
+  1.30 │1d:   add     $0x8,%rax                                                                                 ▒
+       │      cmp     %rcx,%rax                                                                                 ▒
+       │    ↓ je      40                                                                                        ◆
+       │    if (array[i] > array[j]) {                                                                          ▒
+       │26:   vmovsd  -0x8(%rdx),%xmm1                                                                          ▒
+ 64.57 │      vmovsd  (%rax),%xmm0                                                                              ▒
+  4.64 │      vcomisd %xmm0,%xmm1                                                                               ▒
+  3.05 │    ↑ jbe     1d                                                                                        ▒
+       │    DATA_T tmp = array[j];                                                                              ▒
+       │    array[j] = array[i];    
+
+I ran 3 different tests for perf stat to measure the branch misses that occur 
+with sorted, reverse sorted and random data with 20,000 elements. I used the
+commands provided in the lab to get these results. The random array showed that 
+many branch mispredictions while the other 2 showed similar results to eachother, however,
+with many many less branch predictions. The perf record/annotate confirmed that most mispredcitions 
+stemmed from the if statement. I will use these tests for Q4.
+
+4. What fraction of the branches at the if in bubble sort were mispredicted when the
+ array was random? When it was already sorted? Note that for an array of 20000, the if
+ should execute 199,990,000 times.
+
+With 20,000 array elements the if line executes 199,990,000 times. In the random array
+I observed 44,016,147 branch misses, from the record we saw about 55% of those branch
+misses occured at the if branch, which is roughly 24 million mispredcitions, or 12%
+of all if executions. In the sorted array there were 159,383 total branch misses, with
+about 64% at the if branch, so that would around 102,000 mispredcitions, which is about
+0.05% of all if executions. 
+
+5. How did the Perf report number of cache misses change with the larger 2D array "height"?
+   Does it match your expectations?
+
+ccj6@asb9838nu-d16 ~> perf stat -e L1-dcache-load-misses,L1-dcache-loads,LLC-l
+oad-misses,LLC-loads ./a.out 80000000 1
+
+Array size: 625000 kB
+Calculated 2341.98 in    78.28 ms on 80000000*1 array.
+
+ Performance counter stats for './a.out 80000000 1':
+
+        22,492,916      L1-dcache-load-misses            #    1.14% of all L1-dcache accesses 
+     1,977,433,740      L1-dcache-loads                                                       
+           316,199      LLC-load-misses                  #   65.37% of all LL-cache accesses  
+           483,712      LLC-loads                                                             
+
+       1.249553366 seconds time elapsed
+
+       1.074871000 seconds user
+       0.168979000 seconds sys
+
+
+ccj6@asb9838nu-d16 ~> perf stat -e L1-dcache-load-misses,L1-dcache-loads,LLC-load-misses,LLC-loads ./a.out 800000
+00 10000
+
+Array size: 625000 kB
+Calculated 2341.98 in   492.77 ms on 8000*10000 array.
+
+ Performance counter stats for './a.out 80000000 10000':
+
+       172,648,521      L1-dcache-load-misses            #    8.72% of all L1-dcache accesses 
+     1,978,986,078      L1-dcache-loads                                                       
+        16,646,736      LLC-load-misses                  #   12.70% of all LL-cache accesses  
+       131,058,043      LLC-loads                                                             
+
+       1.672794011 seconds time elapsed
+
+       1.492148000 seconds user
+       0.177898000 seconds sys
+
+When we increase the height of the array while summing over the cols, the number of 
+L1 cache misses increased from 1.14% to 8.72%. This happened because accessing the array 
+col-wise means we are jumping around in memeory rather than reading in consecutive elements.
+On the other hand, the LLC misses also were effected as the height was changed, but they
+represented smaller percentage of all accesses. This matches what I would expect, as
+accessing memeory in a non sequential pattern leads to more cache misses. 
+
+6. How did the Cachegrind report number of cache misses change with the larger 2D array "height"?
+ Does it match your expectations?
+
+when the array height increased from 1 to 10,000 the L1 cache miss rate increased an
+incredible amount going from 12.5% all the way to 100%. This sort of matches what I expected 
+but perhaps has a few more cache misses than I would have predicted. With a height of 1 
+the column traversal accesses consecutive memory locations allowing multiple elements per cache
+line to be used. With the height set to 10,000 each access is jumping through memory roughly
+800 elements. which is causing every single array access to miss the L1 cache. 
